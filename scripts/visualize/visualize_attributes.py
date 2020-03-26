@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 # output/RV_Data/Pitch/d3_-34/d1_0001.dat.png
 # output/RV_Data/Pitch/d4_-31/d1_0001.dat.png
 
-file = "../data/RV_Data/Pitch/d1_-40/d1_0050.dat"
+file = "../../data/RV_Data/Pitch/d1_-40/d1_0050.dat"
 # directory = "../data/RV_Data/Pitch/d2_-37/"
 # directory = "../data/RV_Data/Pitch/d3_-34/"
 # directory = "../data/RV_Data/Pitch/d4_-31/"

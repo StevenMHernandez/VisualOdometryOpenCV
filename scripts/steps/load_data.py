@@ -4,8 +4,8 @@ import numpy as np
 from scipy.signal import medfilt2d
 
 
-def load_data_attributes(directory, file_name):
-    f = open(directory + file_name)
+def load_data_attributes(directory_file_name):
+    f = open(directory_file_name)
     lines = f.readlines()
 
     datas = {}
@@ -23,18 +23,14 @@ def load_data_attributes(directory, file_name):
     return datas
 
 
-def load_image(directory, file_name, image_attribute):
-    attributes = load_data_attributes(directory, file_name)
+def load_image(directory_file_name, image_attribute):
+    attributes = load_data_attributes(directory_file_name)
 
     img = attributes[image_attribute]
-    _mean = attributes[image_attribute].mean().mean()
-    _std = attributes[image_attribute].std().std()
     img = medfilt2d(img, 3)
 
     _min = img.min().min()
     _max = img.max().max()
-
-
 
     img = ((img + _min) * (255 / (_max - _min))).astype(dtype=np.uint8)
     depth_img = np.zeros(list(img.shape) + [3])
