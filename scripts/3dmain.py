@@ -64,16 +64,31 @@ for i in range(1, 100):
     kp1, des1 = detector.detectAndCompute(img1, None)
     kp2, des2 = detector.detectAndCompute(img2, None)
 
-    bf = cv2.BFMatcher(cv2.NORM_HAMMING if DETECTOR == "ORB" else cv2.NORM_L1, crossCheck=False)
-    matches = bf.match(des1, des2)
-    # matches = sorted(matches, key=lambda x: x.distance)
-    top_matches = matches[:TOP_K_MATCHES]  # ???
-    img3 = cv2.drawMatches(img1, kp1, img2, kp2, top_matches, None, flags=2)
+    FLANN_INDEX_KDTREE = 1
+    index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
+    search_params = dict(checks=50)
+    flann = cv2.FlannBasedMatcher(index_params, search_params)
+    matches = flann.knnMatch(des1, des2, k=2)
+
+    good = []
+    pts1 = []
+    pts2 = []
+    # ratio test as per Lowe's paper
+    for i, (m, n) in enumerate(matches):
+        if m.distance < 0.5 * n.distance:
+            good.append(m)
+            pts2.append(kp2[m.trainIdx].pt)
+            pts1.append(kp1[m.queryIdx].pt)
+    points1 = np.array(pts1)
+    points2 = np.array(pts2)
+
+
+    img3 = cv2.drawMatches(img1, kp1, img2, kp2, good, None, flags=2)
     plt.imshow(img3)
     plt.show()
 
-    points1 = np.array([list(kp1[m.queryIdx].pt) for m in top_matches])
-    points2 = np.array([list(kp2[m.trainIdx].pt) for m in top_matches])
+    top_matches = good
+
 
     point1_3d = np.array([list(depth_img2[int(kp1[m.queryIdx].pt[1])][int(kp1[m.queryIdx].pt[0])]) for m in top_matches]).T
     point2_3d = np.array([list(depth_img1[int(kp2[m.trainIdx].pt[1])][int(kp2[m.trainIdx].pt[0])]) for m in top_matches]).T
