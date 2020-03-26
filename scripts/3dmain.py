@@ -2,6 +2,8 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 
+from scripts.rotation_to_euler import rotation_to_euler
+
 cv = cv2
 
 from scripts.estimate_R_and_t import estimate_R_and_t
@@ -22,19 +24,32 @@ for i in range(1, 100):
     print(i)
 
     # img1, depth_img1 = load_image("../data/RV_Data/Pitch/d1_-40/", "d1_{0:04d}.dat".format(i), ATTRIBUTE)
-    # img2, depth_img2 = load_image("../data/RV_Data/Pitch/d1_-40/", "d1_{0:04d}.dat".format(i), ATTRIBUTE)
-    # img2, depth_img2 = load_image("../data/RV_Data/Pitch/d2_-37/", "d2_{0:04d}.dat".format(i), ATTRIBUTE)
-    # img2, depth_img2 = load_image("../data/RV_Data/Pitch/d3_-34/", "d3_{0:04d}.dat".format(i), ATTRIBUTE)
+    # # img2, depth_img2 = load_image("../data/RV_Data/Pitch/d1_-40/", "d1_{0:04d}.dat".format(i), ATTRIBUTE)
+    # # img2, depth_img2 = load_image("../data/RV_Data/Pitch/d2_-37/", "d2_{0:04d}.dat".format(i), ATTRIBUTE)
+    # # img2, depth_img2 = load_image("../data/RV_Data/Pitch/d3_-34/", "d3_{0:04d}.dat".format(i), ATTRIBUTE)
     # img2, depth_img2 = load_image("../data/RV_Data/Pitch/d4_-31/", "d4_{0:04d}.dat".format(i), ATTRIBUTE)
 
-    img1, depth_img1 = load_image("../data/RV_Data/Translation/Y1/", "frm_{0:04d}.dat".format(i), ATTRIBUTE)
-    # img2, depth_img2 = load_image("../data/RV_Data/Translation/Y1/", "frm_{0:04d}.dat".format(i), ATTRIBUTE)
-    img2, depth_img2 = load_image("../data/RV_Data/Translation/Y2/", "frm_{0:04d}.dat".format(i), ATTRIBUTE)
-    # img2, depth_img2 = load_image("../data/RV_Data/Translation/Y3/", "frm_{0:04d}.dat".format(i), ATTRIBUTE)
+
+    img1, depth_img1 = load_image("../data/RV_Data/Yaw/d1_44/", "d1_{0:04d}.dat".format(i), ATTRIBUTE)
+    # img2, depth_img2 = load_image("../data/RV_Data/Yaw/d1_44/", "d1_{0:04d}.dat".format(i), ATTRIBUTE)
+    # img2, depth_img2 = load_image("../data/RV_Data/Yaw/d2_41/", "d2_{0:04d}.dat".format(i), ATTRIBUTE)
+    # img2, depth_img2 = load_image("../data/RV_Data/Yaw/d3_38/", "d3_{0:04d}.dat".format(i), ATTRIBUTE)
+    img2, depth_img2 = load_image("../data/RV_Data/Yaw/d4_35/", "d4_{0:04d}.dat".format(i), ATTRIBUTE)
+
+    # img1, depth_img1 = load_image("../data/RV_Data/Translation/Y1/", "frm_{0:04d}.dat".format(i), ATTRIBUTE)
+    # # img2, depth_img2 = load_image("../data/RV_Data/Translation/Y1/", "frm_{0:04d}.dat".format(i), ATTRIBUTE)
+    # # img2, depth_img2 = load_image("../data/RV_Data/Translation/Y2/", "frm_{0:04d}.dat".format(i), ATTRIBUTE)
+    # # img2, depth_img2 = load_image("../data/RV_Data/Translation/Y3/", "frm_{0:04d}.dat".format(i), ATTRIBUTE)
     # img2, depth_img2 = load_image("../data/RV_Data/Translation/Y4/", "frm_{0:04d}.dat".format(i), ATTRIBUTE)
 
-    img1 = cv2.GaussianBlur(img1, (5, 5), 0)
-    img2 = cv2.GaussianBlur(img2, (5, 5), 0)
+    img1 = cv2.medianBlur(img1,5)
+    img2 = cv2.medianBlur(img2,5)
+    print(img1.max().max())
+    print(img2.max().max())
+    print(img1.min().min())
+    print(img2.min().min())
+    # img1 = cv2.GaussianBlur(img1, (5, 5), 0)
+    # img2 = cv2.GaussianBlur(img2, (5, 5), 0)
 
     if DETECTOR == "ORB":
         detector = cv2.ORB_create()
@@ -53,9 +68,9 @@ for i in range(1, 100):
     matches = bf.match(des1, des2)
     # matches = sorted(matches, key=lambda x: x.distance)
     top_matches = matches[:TOP_K_MATCHES]  # ???
-    # img3 = cv2.drawMatches(img1, kp1, img2, kp2, top_matches, None, flags=2)
-    # plt.imshow(img3)
-    # plt.show()
+    img3 = cv2.drawMatches(img1, kp1, img2, kp2, top_matches, None, flags=2)
+    plt.imshow(img3)
+    plt.show()
 
     points1 = np.array([list(kp1[m.queryIdx].pt) for m in top_matches])
     points2 = np.array([list(kp2[m.trainIdx].pt) for m in top_matches])
@@ -85,8 +100,11 @@ for i in range(1, 100):
     # plot_3d(p, p_prime, "p and p_prime")
     # plot_3d(p_prime, R.dot(p) + t, "p_prime and Rp + T")
 
-    list_R.append(R)
+    list_R.append(rotation_to_euler(R))
     list_t.append(t)
+
+RPY_mean = np.array(list_R).mean(axis=0)
+RPY_std = np.array(list_R).std(axis=0)
 
 XYZ_mean = np.array(list_t).mean(axis=0)
 XYZ_std = np.array(list_t).std(axis=0)
@@ -94,3 +112,6 @@ XYZ_std = np.array(list_t).std(axis=0)
 print("X: ({},{})".format(XYZ_mean[0][0], XYZ_std[0][0]))
 print("Y: ({},{})".format(XYZ_mean[2][0], XYZ_std[2][0]))
 print("Z: ({},{})".format(XYZ_mean[1][0], XYZ_std[1][0]))
+print("φ: ({},{})".format(RPY_mean[0], RPY_std[0]))
+print("θ: ({},{})".format(RPY_mean[2], RPY_std[2]))
+print("ψ: ({},{})".format(RPY_mean[1], RPY_std[1]))
