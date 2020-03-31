@@ -47,23 +47,19 @@ def evaluate(base_data_path, movement_data_path, settings):
         flann = cv2.FlannBasedMatcher(index_params, search_params)
         matches = flann.knnMatch(des1, des2, k=2)
 
-        good = []
-        pts1 = []
-        pts2 = []
-        # ratio test as per Lowe's paper
+        top_matches = []
         for i, (m, n) in enumerate(matches):
-            if m.distance < settings["FEATURE_FILTER_RATIO"] * n.distance:
-                good.append(m)
-                pts2.append(kp2[m.trainIdx].pt)
-                pts1.append(kp1[m.queryIdx].pt)
-        points1 = np.array(pts1)
-        points2 = np.array(pts2)
+            if not settings["KNN_MATCHING"] or m.distance < settings["FEATURE_FILTER_RATIO"] * n.distance:
+                top_matches.append(m)
 
-        img3 = cv2.drawMatches(img1, kp1, img2, kp2, good, None, flags=2)
-        plt.imshow(img3)
-        plt.show()
+        top_matches = top_matches[:3]
 
-        top_matches = good
+
+        # img3 = cv2.drawMatches(img1, kp1, img2, kp2, top_matches, None, flags=2)
+        # plt.figure(figsize=(10,5))
+        # plt.imshow(img3)
+        # plt.savefig("feature_match_" + settings["DETECTOR"] + "." + str(settings["KNN_MATCHING"]) + ".png")
+        # exit()
 
         point1_3d = np.array(
             [list(depth_img2[int(kp1[m.queryIdx].pt[1])][int(kp1[m.queryIdx].pt[0])]) for m in top_matches]).T
@@ -78,17 +74,21 @@ def evaluate(base_data_path, movement_data_path, settings):
         def plot_3d(q, q_prime, title):
             fig = plt.figure()
             ax = fig.add_subplot(111, projection='3d')
-            ax.scatter(q[0, :], q[1, :], q[2, :], c='k')
-            ax.scatter(q_prime[0, :], q_prime[1, :], q_prime[2, :], c='r', marker='x')
+            ax.scatter(q[0, :], q[2, :], q[1, :], c='k', label='p\'')
+            ax.scatter(q_prime[0, :], q_prime[2, :], q_prime[1, :], c='r', marker='x', label='Rp + t')
 
             for i in range(q.shape[1]):
-                plt.plot([q[0, i], q_prime[0, i]], [q[1, i], q_prime[1, i]], [q[2, i], q_prime[2, i]], 'k--')
+                plt.plot([q[0, i], q_prime[0, i]], [q[2, i], q_prime[2, i]], [q[1, i], q_prime[1, i]], 'k--')
 
-            plt.title(title if title else "None")
-            plt.show()
+            ax.legend()
 
-        # plot_3d(p, p_prime, "p and p_prime")
-        # plot_3d(p_prime, R.dot(p) + t, "p_prime and Rp + T")
+            # plt.title(title if title else "None")
+            # plt.show()
+            plt.savefig("3d_points_" + title + ".png")
+
+        # plot_3d(p, p_prime, "original")
+        # plot_3d(p_prime, R.dot(p) + t, "minimized")
+
 
         list_R.append(rotation_to_euler(R))
         list_t.append(t)

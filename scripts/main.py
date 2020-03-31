@@ -5,38 +5,54 @@ if __name__ == "__main__":
 
     to_evaluate = {
         "../data/RV_Data/Pitch/d1_-40/d1_{0:04d}.dat": [
-            "../data/RV_Data/Pitch/d2_-37/d2_{0:04d}.dat",
-            "../data/RV_Data/Pitch/d3_-34/d3_{0:04d}.dat",
-            "../data/RV_Data/Pitch/d4_-31/d4_{0:04d}.dat",
+            ({"pitch": 3}, "../data/RV_Data/Pitch/d2_-37/d2_{0:04d}.dat"), # tuple: (value changed, directory for files)
+            ({"pitch": 6}, "../data/RV_Data/Pitch/d3_-34/d3_{0:04d}.dat"),
+            ({"pitch": 9}, "../data/RV_Data/Pitch/d4_-31/d4_{0:04d}.dat"),
         ],
         "../data/RV_Data/Yaw/d1_44/d1_{0:04d}.dat": [
-            "../data/RV_Data/Yaw/d2_41/d2_{0:04d}.dat",
-            "../data/RV_Data/Yaw/d3_38/d3_{0:04d}.dat",
-            "../data/RV_Data/Yaw/d4_35/d4_{0:04d}.dat",
+            ({"yaw": 3}, "../data/RV_Data/Yaw/d2_41/d2_{0:04d}.dat"),
+            ({"yaw": 6}, "../data/RV_Data/Yaw/d3_38/d3_{0:04d}.dat"),
+            ({"yaw": 9}, "../data/RV_Data/Yaw/d4_35/d4_{0:04d}.dat"),
         ],
         "../data/RV_Data/Translation/Y1/frm_{0:04d}.dat": [
-            "../data/RV_Data/Translation/Y2/frm_{0:04d}.dat",
-            "../data/RV_Data/Translation/Y3/frm_{0:04d}.dat",
-            "../data/RV_Data/Translation/Y4/frm_{0:04d}.dat",
+            ({"y": 100}, "../data/RV_Data/Translation/Y2/frm_{0:04d}.dat"),
+            ({"y": 200}, "../data/RV_Data/Translation/Y3/frm_{0:04d}.dat"),
+            ({"y": 300}, "../data/RV_Data/Translation/Y4/frm_{0:04d}.dat"),
         ]
     }
 
     settings = {
-        # "DETECTOR": "ORB",
-        # "DETECTOR": "SIFT",
-        "DETECTOR": "SURF",
+        "KNN_MATCHING": True,
+        # "KNN_MATCHING": False,
+
+        "DETECTOR": "SIFT",
+        # "DETECTOR": "SURF",
+
         "FEATURE_FILTER_RATIO": 0.5,
         "MEDIAN_BLUR": False,
         "GAUSSIAN_BLUR": False,
     }
 
-    f = open("output.csv", "w")
+    f = open("../output.csv", "w")
 
-    f.write("X.mean,X.std,Y.mean,Y.std,Z.mean,Z.std,φ.mean,φ.std,θ.mean,θ.std,ψ.mean,ψ.std\n")
+    f.write("change, X.mean,X.std,Y.mean,Y.std,Z.mean,Z.std,φ.mean,φ.std,θ.mean,θ.std,ψ.mean,ψ.std\n")
 
     for k in to_evaluate.keys():
         print(k)
         base_data_path = k
-        for movement_data_path in to_evaluate[k]:
+        for change, movement_data_path in to_evaluate[k]:
+            base = {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "roll": 0,
+                "pitch": 0,
+                "yaw": 0,
+            }
+            for k in change.keys():
+                base[k] = change[k]
+            left = "x y z: ({} {} {}) φ θ ψ: ({} {} {}),".format(base['x'], base['y'], base['z'], base['roll'], base['pitch'], base['yaw'])
+
             results = evaluate(base_data_path, movement_data_path, settings)
-            f.write(",".join([str(x) for x in results]) + "\n")
+            f.write(left + ",".join(["{:.3f}".format(x) for x in results]) + "\n")
+            f.flush()

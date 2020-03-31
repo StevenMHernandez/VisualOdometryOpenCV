@@ -28,6 +28,7 @@ def load_image(directory_file_name, image_attribute):
 
     img = attributes[image_attribute]
     img = medfilt2d(img, 3)
+    # img = img.to_numpy()
 
     _min = img.min().min()
     _max = img.max().max()
