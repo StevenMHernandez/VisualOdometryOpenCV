@@ -22,8 +22,11 @@ if __name__ == "__main__":
     }
 
     settings = {
-        "KNN_MATCHING": True,
-        # "KNN_MATCHING": False,
+        # "KNN_MATCHING": True,
+        "KNN_MATCHING": False,
+
+        "RANSAC": True,
+        # "RANSAC": False,
 
         "DETECTOR": "SIFT",
         # "DETECTOR": "SURF",
@@ -33,7 +36,7 @@ if __name__ == "__main__":
         "GAUSSIAN_BLUR": False,
     }
 
-    f = open("../output.csv", "w")
+    f = open("../output/output.csv", "w")
 
     f.write("change, X.mean,X.std,Y.mean,Y.std,Z.mean,Z.std,φ.mean,φ.std,θ.mean,θ.std,ψ.mean,ψ.std\n")
 

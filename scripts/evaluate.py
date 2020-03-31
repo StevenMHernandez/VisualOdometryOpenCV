@@ -2,6 +2,7 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 
+from scripts.steps.ransac import ransac
 from scripts.steps.rotation_to_euler import rotation_to_euler
 
 cv = cv2
@@ -52,13 +53,13 @@ def evaluate(base_data_path, movement_data_path, settings):
             if not settings["KNN_MATCHING"] or m.distance < settings["FEATURE_FILTER_RATIO"] * n.distance:
                 top_matches.append(m)
 
-        top_matches = top_matches[:3]
+        # top_matches = top_matches[:3]
 
 
         # img3 = cv2.drawMatches(img1, kp1, img2, kp2, top_matches, None, flags=2)
         # plt.figure(figsize=(10,5))
         # plt.imshow(img3)
-        # plt.savefig("feature_match_" + settings["DETECTOR"] + "." + str(settings["KNN_MATCHING"]) + ".png")
+        # plt.savefig("../output/feature_match_" + settings["DETECTOR"] + "." + str(settings["KNN_MATCHING"]) + ".png")
         # exit()
 
         point1_3d = np.array(
@@ -69,7 +70,10 @@ def evaluate(base_data_path, movement_data_path, settings):
         p = point1_3d
         p_prime = point2_3d
 
-        R, t = estimate_R_and_t(p, p_prime)
+        if settings['RANSAC']:
+            R, t = ransac(p, p_prime)
+        else :
+            R, t = estimate_R_and_t(p, p_prime)
 
         def plot_3d(q, q_prime, title):
             fig = plt.figure()
@@ -84,7 +88,7 @@ def evaluate(base_data_path, movement_data_path, settings):
 
             # plt.title(title if title else "None")
             # plt.show()
-            plt.savefig("3d_points_" + title + ".png")
+            plt.savefig("../output/3d_points_" + title + ".png")
 
         # plot_3d(p, p_prime, "original")
         # plot_3d(p_prime, R.dot(p) + t, "minimized")
