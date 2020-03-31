@@ -71,7 +71,7 @@ def evaluate(base_data_path, movement_data_path, settings):
         p_prime = point2_3d
 
         if settings['RANSAC']:
-            R, t = ransac(p, p_prime)
+            R, t, inliers = ransac(p, p_prime)
         else :
             R, t = estimate_R_and_t(p, p_prime)
 
@@ -86,16 +86,32 @@ def evaluate(base_data_path, movement_data_path, settings):
 
             ax.legend()
 
-            # plt.title(title if title else "None")
-            # plt.show()
-            plt.savefig("../output/3d_points_" + title + ".png")
+            plt.title(title if title else "None")
+            plt.show()
+            # plt.savefig("../output/3d_points_" + title + ".png")
 
-        # plot_3d(p, p_prime, "original")
-        # plot_3d(p_prime, R.dot(p) + t, "minimized")
+        # plot_3d(p[:,inliers], p_prime[:,inliers], "original")
+        # plot_3d(p_prime[:,inliers], R.dot(p[:,inliers]) + t, "minimized")
 
 
         list_R.append(rotation_to_euler(R))
         list_t.append(t)
+
+    Rs = np.array(list_R)
+    plt.plot(sorted(Rs[:,0]), '.-')
+    plt.plot(sorted(Rs[:,1]), '.-')
+    plt.plot(sorted(Rs[:,2]), '.-')
+    plt.legend(["x", "y", "z"])
+    plt.title("Rotation\n{}\n{}".format(base_data_path, movement_data_path))
+    plt.show()
+
+    ts = np.array([x[:,0] for x in list_t])
+    plt.plot(sorted(ts[:,0]), '.-')
+    plt.plot(sorted(ts[:,1]), '.-')
+    plt.plot(sorted(ts[:,2]), '.-')
+    plt.legend(["x", "y", "z"])
+    plt.title("Translation\n{}\n{}".format(base_data_path, movement_data_path))
+    plt.show()
 
     RPY_mean = np.array(list_R).mean(axis=0)
     RPY_std = np.array(list_R).std(axis=0)
@@ -104,10 +120,19 @@ def evaluate(base_data_path, movement_data_path, settings):
     XYZ_std = np.array(list_t).std(axis=0)
 
     return [
-        XYZ_mean[0][0], XYZ_std[0][0],  # X
-        XYZ_mean[2][0], XYZ_std[2][0],  # Y
-        XYZ_mean[1][0], XYZ_std[1][0],  # Z
-        RPY_mean[0], RPY_std[0],  # φ
-        RPY_mean[2], RPY_std[2],  # θ
-        RPY_mean[1], RPY_std[1],  # ψ
+        XYZ_mean[0][0],  # X
+        XYZ_mean[2][0],  # Y
+        XYZ_mean[1][0],  # Z
+        RPY_mean[0],  # φ
+        RPY_mean[2],  # θ
+        RPY_mean[1],  # ψ
     ]
+
+    # return [
+    #     XYZ_mean[0][0], XYZ_std[0][0],  # X
+    #     XYZ_mean[2][0], XYZ_std[2][0],  # Y
+    #     XYZ_mean[1][0], XYZ_std[1][0],  # Z
+    #     RPY_mean[0], RPY_std[0],  # φ
+    #     RPY_mean[2], RPY_std[2],  # θ
+    #     RPY_mean[1], RPY_std[1],  # ψ
+    # ]

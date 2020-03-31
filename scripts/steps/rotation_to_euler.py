@@ -25,13 +25,17 @@ def rotation_to_euler(R):
 
     singular = sy < 1e-6
 
+    def clamp(x, _min, _max):
+        return max(_min, min(_max, x))
+
     if not singular:
-        x = math.atan2(R[2, 1], R[2, 2])
-        y = math.atan2(-R[2, 0], sy)
-        z = math.atan2(R[1, 0], R[0, 0])
+        x = math.atan2(-R[1,2], R[2, 2])
+        y = math.asin(clamp(R[0, 2], -1, 1))
+        z = math.atan2(-R[0,1], R[0, 0])
     else:
-        x = math.atan2(-R[1, 2], R[1, 1])
-        y = math.atan2(-R[2, 0], sy)
+        x = math.atan2(R[2,1], R[1, 1])
+        y = math.asin(clamp(R[0, 2], -1, 1))
         z = 0
 
-    return [x, y, z]
+
+    return [np.degrees(x), np.degrees(y), np.degrees(z)]

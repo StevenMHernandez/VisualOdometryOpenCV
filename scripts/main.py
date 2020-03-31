@@ -38,7 +38,8 @@ if __name__ == "__main__":
 
     f = open("../output/output.csv", "w")
 
-    f.write("change, X.mean,X.std,Y.mean,Y.std,Z.mean,Z.std,φ.mean,φ.std,θ.mean,θ.std,ψ.mean,ψ.std\n")
+    f.write("change, X.mean,Y.mean,Z.mean,φ.mean,θ.mean,ψ.mean\n")
+    # f.write("change, X.mean,X.std,Y.mean,Y.std,Z.mean,Z.std,φ.mean,φ.std,θ.mean,θ.std,ψ.mean,ψ.std\n")
 
     for k in to_evaluate.keys():
         print(k)
@@ -59,3 +60,5 @@ if __name__ == "__main__":
             results = evaluate(base_data_path, movement_data_path, settings)
             f.write(left + ",".join(["{:.3f}".format(x) for x in results]) + "\n")
             f.flush()
+
+    print("done")

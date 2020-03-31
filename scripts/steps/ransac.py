@@ -7,7 +7,7 @@ from scripts.steps.estimate_R_and_t import estimate_R_and_t
 
 def ransac(p, p_prime):
     indices = list(range(p.shape[1]))
-    th = 0.5
+    th = 0.1
 
     max_S_k = 0
     inliers = None
@@ -27,4 +27,4 @@ def ransac(p, p_prime):
             inliers = deepcopy(list(error < th))
 
     R,t = estimate_R_and_t(p[:,inliers], p_prime[:,inliers])
-    return R,t
+    return R,t,inliers

@@ -3,6 +3,8 @@ from numpy.linalg import det
 from scipy.linalg import svd
 import matplotlib.pyplot as plt
 
+from scripts.steps.rotation_to_euler import rotation_to_euler
+
 
 def plot_3d(q, q_prime, title=None):
     fig = plt.figure()
@@ -64,6 +66,12 @@ def estimate_R_and_t(A, B):
 if __name__ == "__main__":
     A = np.array([[0, 1, 1, 1], [0, 0, 1, 1], [0, 0, 0, 1]])
     # B = np.array([[0, 1, 1, 1], [0, 0, 1, 1], [0, 0, 0, 1]])
+    # B = np.array([[0, 1, 1, 1], [0, 0, 1, 1], [0, 0, 0, 123]])
     # B = (np.array([[0, 0, -1, -1], [0, 1, 1, 1], [0, 0, 0, 1]]).T).T
     B = (np.array([[0, 0, -1, -1], [0, 1, 1, 1], [0, 0, 0, 1]]).T + [-10, 10.5, 0]).T
-    estimate_R_and_t(A, B)
+    R, t = estimate_R_and_t(A, B)
+    print("R", R)
+    print("t", t)
+
+    xyz = rotation_to_euler(R)
+    print(xyz)
