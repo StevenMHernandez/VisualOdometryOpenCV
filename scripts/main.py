@@ -53,10 +53,32 @@ if __name__ == "__main__":
             }
             for k in change.keys():
                 base[k] = change[k]
-            left = "x y z: ({} {} {}) φ θ ψ: ({} {} {}),".format(base['x'], base['y'], base['z'], base['roll'], base['pitch'], base['yaw'])
+            left = "x y z: ({} {} {}) φ θ ψ: ({} {} {}),".format(
+                base['x'],
+                base['y'],
+                base['z'],
+                base['roll'],
+                base['pitch'],
+                base['yaw']
+            )
 
             results = evaluate(base_data_path, movement_data_path, settings)
-            f.write(left + ",".join(["{:.3f}".format(x) for x in results]) + "\n")
+            print("pout", results[2], base['y'])
+            out = [
+                abs(results[0] + base['x']),
+                results[1],
+                abs(results[2] + base['y']),
+                results[3],
+                abs(results[4] + base['z']),
+                results[5],
+                abs(results[6] - base['roll']),
+                results[7],
+                abs(results[8] - base['pitch']),
+                results[9],
+                abs(results[10] - base['yaw']),
+                results[11],
+            ]
+            f.write(left + ",".join(["{:.3f}".format(x) for x in out]) + "\n")
             f.flush()
 
     print("done")

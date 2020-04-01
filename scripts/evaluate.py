@@ -102,16 +102,19 @@ def evaluate(base_data_path, movement_data_path, settings):
     RPY_mean = np.array(list_R).mean(axis=0)
     RPY_std = np.array(list_R).std(axis=0)
 
-    XYZ_mean = (np.array(list_t) * 1000).mean(axis=0)
-    XYZ_std = (np.array(list_t) * 1000).std(axis=0)
+    XYZ_scaling = 1000 / 3
 
-    plot_cdf((np.array(list_R) * 1000), "Rotation")
-    plot_cdf((np.array([x[:, 0] for x in list_t]) * 1000), "Translation")
+    XYZ_mean = (np.array(list_t) * XYZ_scaling).mean(axis=0)
+    XYZ_std = (np.array(list_t) * XYZ_scaling).std(axis=0)
 
+    plot_cdf((np.array(list_R)), "Rotation")
+    plot_cdf((np.array([x[:, 0] for x in list_t]) * XYZ_scaling), "Translation")
+
+    plt.figure(figsize=(12, 8))
     plt.subplot(1, 2, 1)
     plot_means(np.array(list_R), RPY_mean, RPY_std)
     plt.subplot(1, 2, 2)
-    plot_means(np.array([x[:, 0] for x in list_t]) * 1000, RPY_mean, RPY_std)
+    plot_means(np.array([x[:, 0] for x in list_t]) * XYZ_scaling, RPY_mean, RPY_std)
     plt.suptitle("{}\n{}".format(base_data_path, movement_data_path))
     plt.show()
 
@@ -119,14 +122,13 @@ def evaluate(base_data_path, movement_data_path, settings):
         XYZ_mean[0][0], XYZ_std[0][0],  # X
         XYZ_mean[2][0], XYZ_std[2][0],  # Y
         XYZ_mean[1][0], XYZ_std[1][0],  # Z
-        RPY_mean[0], RPY_std[0],  # φ
-        RPY_mean[2], RPY_std[2],  # θ
+        RPY_mean[2], RPY_std[2],  # φ
+        RPY_mean[0], RPY_std[0],  # θ
         RPY_mean[1], RPY_std[1],  # ψ
     ]
 
 
 def plot_means(_list, _mean, _std):
-    plt.figure(figsize=(12, 8))
     plt.plot(sorted(_list[:, 0]), '.-')
     plt.plot(sorted(_list[:, 1]), '.-')
     plt.plot(sorted(_list[:, 2]), '.-')
