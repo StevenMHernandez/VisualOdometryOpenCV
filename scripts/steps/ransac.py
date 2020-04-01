@@ -5,9 +5,8 @@ from numpy.linalg import norm
 from scripts.steps.estimate_R_and_t import estimate_R_and_t
 
 
-def ransac(p, p_prime):
+def ransac(p, p_prime, th):
     indices = list(range(p.shape[1]))
-    th = 0.1
 
     max_S_k = 0
     inliers = None

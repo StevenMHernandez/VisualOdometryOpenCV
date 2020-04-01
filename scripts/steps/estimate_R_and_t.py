@@ -2,8 +2,7 @@ import numpy as np
 from numpy.linalg import det
 from scipy.linalg import svd
 import matplotlib.pyplot as plt
-
-from scripts.steps.rotation_to_euler import rotation_to_euler
+from transforms3d.euler import mat2euler
 
 
 def plot_3d(q, q_prime, title=None):
@@ -66,12 +65,40 @@ def estimate_R_and_t(A, B):
 if __name__ == "__main__":
     A = np.array([[0, 1, 1, 1], [0, 0, 1, 1], [0, 0, 0, 1]])
     # B = np.array([[0, 1, 1, 1], [0, 0, 1, 1], [0, 0, 0, 1]])
-    # B = np.array([[0, 1, 1, 1], [0, 0, 1, 1], [0, 0, 0, 123]])
+    B = np.array([[0, 1, 1, 1], [0, 0, 1, 1], [0, 0, 0, 123]])
     # B = (np.array([[0, 0, -1, -1], [0, 1, 1, 1], [0, 0, 0, 1]]).T).T
-    B = (np.array([[0, 0, -1, -1], [0, 1, 1, 1], [0, 0, 0, 1]]).T + [-10, 10.5, 0]).T
-    R, t = estimate_R_and_t(A, B)
-    print("R", R)
-    print("t", t)
+    # B = (np.array([[0, 0, -1, -1], [0, 1, 1, 1], [0, 0, 0, 1]]).T + [-10, 10.5, 0]).T
 
-    xyz = rotation_to_euler(R)
-    print(xyz)
+    R, t = estimate_R_and_t(A, B)
+    for s in "sr":
+        for x in "xyz":
+            for y in "xyz":
+                if x != y:
+                    for z in "xyz":
+                        if x != z and y != z:
+                            option = s + x + y + z
+                            print(option, np.degrees(mat2euler(R, option)).round())
+
+    # print(A)
+    # A_prime = A.copy()
+    # tmp = A_prime[1,:].copy()
+    # A_prime[1,:] = A_prime[2,:].copy()
+    # A_prime[2,:] = tmp
+    # B_prime = B.copy()
+    # tmp = B_prime[1,:].copy()
+    # B_prime[1,:] = B_prime[2,:].copy()
+    # B_prime[2,:] = tmp
+    #
+    # print(A_prime)
+    #
+    # R, t = estimate_R_and_t(A, B)
+    # xyz = np.degrees(mat2euler(R))
+    # print(R)
+    # print(t)
+    # print(xyz)
+    #
+    # R, t = estimate_R_and_t(A_prime, B_prime)
+    # xyz = np.degrees(mat2euler(R))
+    # print(R)
+    # print(t)
+    # print(xyz)

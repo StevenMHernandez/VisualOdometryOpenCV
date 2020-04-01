@@ -1,4 +1,3 @@
-import cv2
 import pandas as pd
 import numpy as np
 from scipy.signal import medfilt2d
@@ -23,12 +22,15 @@ def load_data_attributes(directory_file_name):
     return datas
 
 
-def load_image(directory_file_name, image_attribute):
+def load_image(directory_file_name, image_attribute, median_filter):
     attributes = load_data_attributes(directory_file_name)
 
     img = attributes[image_attribute]
-    img = medfilt2d(img, 3)
-    # img = img.to_numpy()
+    if median_filter:
+        img = medfilt2d(img, 3)
+    else:
+        img = img.to_numpy()
+        img[img > 60000] = img.mean()
 
     _min = img.min().min()
     _max = img.max().max()

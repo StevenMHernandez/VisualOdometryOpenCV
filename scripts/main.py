@@ -22,24 +22,22 @@ if __name__ == "__main__":
     }
 
     settings = {
-        # "KNN_MATCHING": True,
-        "KNN_MATCHING": False,
+        "KNN_MATCHING_RATIO": 0.75,
+        # "KNN_MATCHING_RATIO": 0,
 
-        "RANSAC": True,
-        # "RANSAC": False,
+        "RANSAC_THRESHOLD": 0.1,
+        # "RANSAC_THRESHOLD": 0,
 
         "DETECTOR": "SIFT",
         # "DETECTOR": "SURF",
 
-        "FEATURE_FILTER_RATIO": 0.5,
         "MEDIAN_BLUR": False,
         "GAUSSIAN_BLUR": False,
     }
 
     f = open("../output/output.csv", "w")
 
-    f.write("change, X.mean,Y.mean,Z.mean,φ.mean,θ.mean,ψ.mean\n")
-    # f.write("change, X.mean,X.std,Y.mean,Y.std,Z.mean,Z.std,φ.mean,φ.std,θ.mean,θ.std,ψ.mean,ψ.std\n")
+    f.write("change, X.mean,X.std,Y.mean,Y.std,Z.mean,Z.std,φ.mean,φ.std,θ.mean,θ.std,ψ.mean,ψ.std\n")
 
     for k in to_evaluate.keys():
         print(k)
