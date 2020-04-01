@@ -43,7 +43,7 @@ if __name__ == "__main__":
         print(k)
         base_data_path = k
         for change, movement_data_path in to_evaluate[k]:
-            base = {
+            real_change = {
                 "x": 0,
                 "y": 0,
                 "z": 0,
@@ -52,33 +52,18 @@ if __name__ == "__main__":
                 "yaw": 0,
             }
             for k in change.keys():
-                base[k] = change[k]
-            left = "x y z: ({} {} {}) φ θ ψ: ({} {} {}),".format(
-                base['x'],
-                base['y'],
-                base['z'],
-                base['roll'],
-                base['pitch'],
-                base['yaw']
+                real_change[k] = change[k]
+            left_side = "x y z: ({} {} {}) φ θ ψ: ({} {} {}),".format(
+                real_change['x'],
+                real_change['y'],
+                real_change['z'],
+                real_change['roll'],
+                real_change['pitch'],
+                real_change['yaw']
             )
 
-            results = evaluate(base_data_path, movement_data_path, settings)
-            print("pout", results[2], base['y'])
-            out = [
-                abs(results[0] + base['x']),
-                results[1],
-                abs(results[2] + base['y']),
-                results[3],
-                abs(results[4] + base['z']),
-                results[5],
-                abs(results[6] - base['roll']),
-                results[7],
-                abs(results[8] - base['pitch']),
-                results[9],
-                abs(results[10] - base['yaw']),
-                results[11],
-            ]
-            f.write(left + ",".join(["{:.3f}".format(x) for x in out]) + "\n")
+            results = evaluate(base_data_path, movement_data_path, settings, real_change, CALCULATE_ERROR=True)
+            f.write(left_side + ",".join(["{:.3f}".format(x) for x in results]) + "\n")
             f.flush()
 
     print("done")

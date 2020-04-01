@@ -3,6 +3,7 @@ import time
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
+from numpy.core.defchararray import lower
 from transforms3d.euler import mat2euler
 
 from scripts.steps.ransac import ransac
@@ -15,9 +16,12 @@ from scripts.steps.load_data import load_image
 ATTRIBUTE = "Amplitude"
 
 
-def evaluate(base_data_path, movement_data_path, settings):
+def evaluate(base_data_path, movement_data_path, settings, real_change, CALCULATE_ERROR):
     list_R = []
     list_t = []
+
+    movement_type = lower(base_data_path.split("/")[3])
+
 
     print(base_data_path)
     print(movement_data_path)
@@ -90,8 +94,22 @@ def evaluate(base_data_path, movement_data_path, settings):
         #
         # Add results for statistics ✓
         #
-        list_R.append(np.degrees(mat2euler(R)))
-        list_t.append(t)
+        XYZ_scaling = 1000 / 3
+        final_r = np.degrees(mat2euler(R, "ryxz"))
+        final_t = [x[0] * XYZ_scaling for x in t]
+
+        print('pitch', final_r[1], real_change['pitch'], final_r[1] - real_change['pitch'])
+
+        if CALCULATE_ERROR:
+            final_t[0] += real_change['x']
+            final_t[1] += real_change['y']
+            final_t[2] += real_change['z']
+            final_r[0] += real_change['roll']
+            final_r[1] += real_change['pitch']
+            final_r[2] += real_change['yaw']
+
+        list_R.append(final_r)
+        list_t.append(final_t)
 
         #
         # Plots
@@ -99,44 +117,47 @@ def evaluate(base_data_path, movement_data_path, settings):
         # plot_matches(img1, kp1, img2, kp2, top_matches, inliers, base_data_path, image_i)
         # plot_3d(p_prime, R.dot(p) + t, "Rp + t", base_data_path, image_i)
 
-    RPY_mean = np.array(list_R).mean(axis=0)
-    RPY_std = np.array(list_R).std(axis=0)
+    R_bar = np.array(list_R)
+    t_bar = np.array(list_t)
 
-    XYZ_scaling = 1000 / 3
+    XYZ_mean = t_bar.mean(axis=0)
+    XYZ_std = t_bar.std(axis=0)
+    RPY_mean = R_bar.mean(axis=0)
+    RPY_std = R_bar.std(axis=0)
 
-    XYZ_mean = (np.array(list_t) * XYZ_scaling).mean(axis=0)
-    XYZ_std = (np.array(list_t) * XYZ_scaling).std(axis=0)
-
-    plot_cdf((np.array(list_R)), "Rotation")
-    plot_cdf((np.array([x[:, 0] for x in list_t]) * XYZ_scaling), "Translation")
+    if movement_type == 'translation':
+        plot_cdf(t_bar, "Translation", movement_type, real_change, xyz=True)
+    else:
+        plot_cdf(R_bar, "Rotation", movement_type, real_change, rpy=True)
 
     plt.figure(figsize=(12, 8))
     plt.subplot(1, 2, 1)
-    plot_means(np.array(list_R), RPY_mean, RPY_std)
+    plot_means(R_bar, RPY_mean, RPY_std, "Rotation")
     plt.subplot(1, 2, 2)
-    plot_means(np.array([x[:, 0] for x in list_t]) * XYZ_scaling, RPY_mean, RPY_std)
+    plot_means(t_bar, XYZ_mean, XYZ_std, "Translation")
     plt.suptitle("{}\n{}".format(base_data_path, movement_data_path))
     plt.show()
 
     return [
-        XYZ_mean[0][0], XYZ_std[0][0],  # X
-        XYZ_mean[2][0], XYZ_std[2][0],  # Y
-        XYZ_mean[1][0], XYZ_std[1][0],  # Z
-        RPY_mean[2], RPY_std[2],  # φ
-        RPY_mean[0], RPY_std[0],  # θ
-        RPY_mean[1], RPY_std[1],  # ψ
+        XYZ_mean[0], XYZ_std[0],  # X
+        XYZ_mean[1], XYZ_std[1],  # Y
+        XYZ_mean[2], XYZ_std[2],  # Z
+        RPY_mean[0], RPY_std[0],  # φ
+        RPY_mean[1], RPY_std[1],  # θ
+        RPY_mean[2], RPY_std[2],  # ψ
     ]
 
 
-def plot_means(_list, _mean, _std):
+def plot_means(_list, _mean, _std, name):
     plt.plot(sorted(_list[:, 0]), '.-')
     plt.plot(sorted(_list[:, 1]), '.-')
     plt.plot(sorted(_list[:, 2]), '.-')
     plt.legend(["x", "y", "z"])
-    plt.title("\n\nRotation\n{}\n{}".format(_mean, _std))
+    plt.title("\n\n{}\n{}\n{}".format(name, _mean, _std))
 
 
-def plot_cdf(X, title):
+def plot_cdf(X, title, movement_type, real_change, xyz=False, rpy=False):
+    plt.figure(figsize=[7,4])
     for i in range(3):
         _X = X[:, i]
         _step_size = 0.1
@@ -146,12 +167,16 @@ def plot_cdf(X, title):
             _cdf_sum[i] = (_X < v).sum()
 
         plt.plot(_range, _cdf_sum / len(_X))
-    plt.legend(["X", "Y", "Z"])
-    plt.xlabel("Prediction")
+    plt.legend(["X", "Y", "Z"] if xyz else ["φ","θ","ψ",])
+    plt.xlabel("Error ({})".format("mm" if xyz else "degrees"))
     plt.ylabel("CDF")
+    plt.xlim([0, X.max()])
     plt.ylim([0, 1])
-    plt.title(title)
-    plt.show()
+    # plt.title(title)
+    # plt.show()
+
+    plt.savefig("../output/cdf_{}_{}_{}.png".format("t" if xyz else "r", movement_type, max(real_change.values())))
+    plt.close()
 
 
 def plot_matches(img1, kp1, img2, kp2, top_matches, inliers, base_data_path, image_i):
@@ -167,11 +192,11 @@ def plot_matches(img1, kp1, img2, kp2, top_matches, inliers, base_data_path, ima
 def plot_3d(q, q_prime, title, base_data_path, image_i):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(q[0, :], q[2, :], q[1, :], c='k', label='p\'')
-    ax.scatter(q_prime[0, :], q_prime[2, :], q_prime[1, :], c='r', marker='x', label='Rp + t')
+    ax.scatter(q[0, :], q[1, :], q[2, :], c='k', label='p\'')
+    ax.scatter(q_prime[0, :], q_prime[1, :], q_prime[2, :], c='r', marker='x', label='Rp + t')
 
     for i in range(q.shape[1]):
-        plt.plot([q[0, i], q_prime[0, i]], [q[2, i], q_prime[2, i]], [q[1, i], q_prime[1, i]], 'k--')
+        plt.plot([q[0, i], q_prime[0, i]], [q[1, i], q_prime[1, i]], [q[2, i], q_prime[2, i]], 'k--')
 
     ax.legend()
 

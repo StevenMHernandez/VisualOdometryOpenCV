@@ -38,7 +38,7 @@ def load_image(directory_file_name, image_attribute, median_filter):
     img = ((img + _min) * (255 / (_max - _min))).astype(dtype=np.uint8)
     depth_img = np.zeros(list(img.shape) + [3])
     depth_img[:, :, 0] = attributes['Calibrated xVector']
-    depth_img[:, :, 1] = attributes['Calibrated yVector']
-    depth_img[:, :, 2] = attributes['Calibrated Distance']
+    depth_img[:, :, 1] = attributes['Calibrated Distance']
+    depth_img[:, :, 2] = attributes['Calibrated yVector']
 
     return img, depth_img
