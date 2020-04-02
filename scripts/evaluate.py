@@ -94,7 +94,7 @@ def evaluate(base_data_path, movement_data_path, settings, real_change, CALCULAT
         #
         # Add results for statistics ✓
         #
-        XYZ_scaling = 1000 / 3
+        XYZ_scaling = 1000  # meters to millimeters
         final_r = np.degrees(mat2euler(R, "ryxz"))
         final_t = [x[0] * XYZ_scaling for x in t]
 
@@ -115,7 +115,9 @@ def evaluate(base_data_path, movement_data_path, settings, real_change, CALCULAT
         # Plots
         #
         # plot_matches(img1, kp1, img2, kp2, top_matches, inliers, base_data_path, image_i)
-        # plot_3d(p_prime, R.dot(p) + t, "Rp + t", base_data_path, image_i)
+        # plot_3d(p, p_prime, "initial", base_data_path, image_i, 'p', 'p\'')
+        # plot_3d(p_prime, R.dot(p) + t, "Rp + t", base_data_path, image_i, 'p\'', 'Rp + t')
+        # exit()
 
     R_bar = np.array(list_R)
     t_bar = np.array(list_t)
@@ -183,24 +185,23 @@ def plot_matches(img1, kp1, img2, kp2, top_matches, inliers, base_data_path, ima
     plt.figure(figsize=(10, 5))
     img3 = cv2.drawMatches(img1, kp1, img2, kp2, np.array(top_matches)[inliers].tolist(), None, flags=2)
     plt.imshow(img3)
-    ts = time.time()
     plt.savefig("../output/feature_match/" + base_data_path.split("/")[3] + "." + str(image_i) + ".png")
     plt.close()
     # plt.show()
 
 
-def plot_3d(q, q_prime, title, base_data_path, image_i):
-    fig = plt.figure()
+def plot_3d(q, q_prime, title, base_data_path, image_i, label_1, label_2):
+    fig = plt.figure(figsize=[6,6])
     ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(q[0, :], q[1, :], q[2, :], c='k', label='p\'')
-    ax.scatter(q_prime[0, :], q_prime[1, :], q_prime[2, :], c='r', marker='x', label='Rp + t')
+    ax.scatter(q[0, :], q[1, :], q[2, :], c='k', label=label_1)
+    ax.scatter(q_prime[0, :], q_prime[1, :], q_prime[2, :], c='r', marker='x', label=label_2)
 
     for i in range(q.shape[1]):
         plt.plot([q[0, i], q_prime[0, i]], [q[1, i], q_prime[1, i]], [q[2, i], q_prime[2, i]], 'k--')
 
     ax.legend()
 
-    plt.title(title if title else "None")
+    # plt.title(title if title else "None")
     # plt.show()
-    plt.savefig("../output/3d_points/" + base_data_path.split("/")[3] + "." + str(image_i) + ".png")
+    plt.savefig("../output/3d_points/" + base_data_path.split("/")[3] + "." + str(image_i) + title + ".png")
     plt.close()
