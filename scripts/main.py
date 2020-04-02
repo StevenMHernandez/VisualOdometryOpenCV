@@ -15,9 +15,9 @@ if __name__ == "__main__":
             ({"yaw": 9}, "../data/RV_Data/Yaw/d4_35/d4_{0:04d}.dat"),
         ],
         "../data/RV_Data/Translation/Y1/frm_{0:04d}.dat": [
-            ({"y": 300}, "../data/RV_Data/Translation/Y2/frm_{0:04d}.dat"),
-            ({"y": 600}, "../data/RV_Data/Translation/Y3/frm_{0:04d}.dat"),
-            ({"y": 900}, "../data/RV_Data/Translation/Y4/frm_{0:04d}.dat"),
+            ({"y": 305}, "../data/RV_Data/Translation/Y2/frm_{0:04d}.dat"),
+            ({"y": 610}, "../data/RV_Data/Translation/Y3/frm_{0:04d}.dat"),
+            ({"y": 915}, "../data/RV_Data/Translation/Y4/frm_{0:04d}.dat"),
         ]
     }
 
@@ -62,7 +62,7 @@ if __name__ == "__main__":
                 real_change['yaw']
             )
 
-            results = evaluate(base_data_path, movement_data_path, settings, real_change, CALCULATE_ERROR=True)
+            results = evaluate(base_data_path, movement_data_path, settings, real_change, CALCULATE_ERROR=False)
             f.write(left_side + ",".join(["{:.3f}".format(x) for x in results]) + "\n")
             f.flush()
 
