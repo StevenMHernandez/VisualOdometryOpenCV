@@ -1,6 +1,10 @@
 import cv2
+from cachetools import cached
+from cachetools.keys import hashkey
 from pandas import np
 from transforms3d.euler import mat2euler
+from transforms3d.quaternions import mat2quat
+import matplotlib.pyplot as plt
 
 from scripts.steps.estimate_R_and_t import estimate_R_and_t
 from scripts.steps.load_data import load_image
@@ -8,8 +12,13 @@ from scripts.steps.ransac import ransac
 
 ATTRIBUTE = "Amplitude"
 
+detector = cv2.xfeatures2d.SIFT_create()
 
-def predict_pose_change(data_1, data_2, settings, real_change, CALCULATE_ERROR):
+@cached(cache={}, key=lambda image_name, img_x: hashkey(image_name))
+def cachedDetectAndCompute(image_name, img_x):
+    return detector.detectAndCompute(img_x, None)
+
+def predict_pose_change(data_1, data_2, settings, real_change, CALCULATE_ERROR, print_image=False):
     #
     # Load Amplitude image and 3D point cloud ✓
     #
@@ -28,19 +37,8 @@ def predict_pose_change(data_1, data_2, settings, real_change, CALCULATE_ERROR):
     #
     # Feature Selection ✓
     #
-    detector = None
-    if settings['DETECTOR'] == "ORB":
-        detector = cv2.ORB_create()
-    elif settings['DETECTOR'] == "SIFT":
-        detector = cv2.xfeatures2d.SIFT_create()
-    elif settings['DETECTOR'] == "SURF":
-        detector = cv2.xfeatures2d.SURF_create()
-    else:
-        print("Detector ({}) unknown".format(settings['DETECTOR']))
-        exit(-1)
-
-    kp1, des1 = detector.detectAndCompute(img1, None)
-    kp2, des2 = detector.detectAndCompute(img2, None)
+    kp1, des1 = cachedDetectAndCompute(data_1, img1)
+    kp2, des2 = cachedDetectAndCompute(data_2, img2)
 
     #
     # Feature Matching ✓
@@ -52,9 +50,13 @@ def predict_pose_change(data_1, data_2, settings, real_change, CALCULATE_ERROR):
     matches = flann.knnMatch(des1, des2, k=2)
 
     top_matches = []
-    for i, (m, n) in enumerate(matches):
-        if not settings["KNN_MATCHING_RATIO"] or m.distance < settings["KNN_MATCHING_RATIO"] * n.distance:
-            top_matches.append(m)
+    _knn_ratio = settings["KNN_MATCHING_RATIO"]
+    while (len(top_matches) < 3):
+        for i, (m, n) in enumerate(matches):
+            if not _knn_ratio or m.distance < _knn_ratio * n.distance:
+                top_matches.append(m)
+        print("_knn_ratio", _knn_ratio, "#", len(matches), "#", len(top_matches))
+        _knn_ratio += 0.1
 
     #
     # Convert matches to 3d point lists ✓
@@ -65,17 +67,18 @@ def predict_pose_change(data_1, data_2, settings, real_change, CALCULATE_ERROR):
     #
     # Select R and t with RANSAC (or not RANSAC) ✓
     #
-    if settings['RANSAC_THRESHOLD'] > 0:
-        R, t, inliers = ransac(p, p_prime, settings['RANSAC_THRESHOLD'])
-    else:
-        inliers = list(range(p.shape[1]))  # all matches are considered inliers
-        R, t = estimate_R_and_t(p, p_prime)
+    R, t, inliers, informationMatrix = ransac(p, p_prime, settings['RANSAC_THRESHOLD'])
+
+    if len([x for x in inliers if x]) < 2:
+        print("top_matches", len(top_matches), len(matches))
+        raise Exception("Not enough inliers !")
 
     #
     # Add results for statistics ✓
     #
     XYZ_scaling = 1000  # meters to millimeters
     final_r = np.degrees(mat2euler(R, "ryxz"))
+    final_r_q = np.degrees(mat2quat(R))
     final_t = [x[0] * XYZ_scaling for x in t]
 
 
@@ -91,9 +94,35 @@ def predict_pose_change(data_1, data_2, settings, real_change, CALCULATE_ERROR):
     #
     # Plots
     #
-    # plot_matches(img1, kp1, img2, kp2, top_matches, inliers, base_data_path, image_i)
-    # plot_3d(p, p_prime, "initial", base_data_path, image_i, 'p', 'p\'')
-    # plot_3d(p_prime, R.dot(p) + t, "Rp + t", base_data_path, image_i, 'p\'', 'Rp + t')
-    # exit()
+    if print_image:
+        plot_matches(img1, kp1, img2, kp2, top_matches, inliers, "./", data_1.split("/")[-1], data_2.split("/")[-1])
+        # plot_3    d(p, p_prime, "initial", "./", 123, 'p', 'p\'')
+        # plot_3d(p_prime, R.dot(p) + t, "Rp + t", "./", 123, 'p\'', 'Rp + t')
 
-    return final_r, final_t, inliers
+    return final_r_q, final_t, inliers, informationMatrix
+
+
+def plot_matches(img1, kp1, img2, kp2, top_matches, inliers, base_data_path, image_i, image_j):
+    plt.figure(figsize=(10, 5))
+    img3 = cv2.drawMatches(img1, kp1, img2, kp2, np.array(top_matches)[inliers].tolist(), None, flags=2)
+    plt.imshow(img3)
+    plt.title(" # inliers: " + str(len([x for x in inliers if x])))
+    # plt.savefig("../output/feature_match/" + base_data_path.split("/")[3] + "." + str(image_i) + ".png")
+    plt.savefig("../output/feature_match/path_output_1/" + str(image_i) + "." + str(image_j) + ".png")
+    plt.close()
+
+
+def plot_3d(q, q_prime, title, base_data_path, image_i, label_1, label_2):
+    fig = plt.figure(figsize=[6, 6])
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(q[0, :], q[1, :], q[2, :], c='k', label=label_1)
+    ax.scatter(q_prime[0, :], q_prime[1, :], q_prime[2, :], c='r', marker='x', label=label_2)
+
+    for i in range(q.shape[1]):
+        plt.plot([q[0, i], q_prime[0, i]], [q[1, i], q_prime[1, i]], [q[2, i], q_prime[2, i]], 'k--')
+
+    ax.legend()
+
+    # plt.savefig("../output/3d_points/" + base_data_path.split("/")[3] + "." + str(image_i) + title + ".png")
+    plt.savefig("../output/3d_points/." + str(image_i) + title + ".png")
+    plt.close()

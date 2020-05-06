@@ -24,7 +24,7 @@ def evaluate(base_data_path, movement_data_path, settings, real_change, CALCULAT
         #
         # Predict Pose Change
         #
-        final_r, final_t, inliers = predict_pose_change(base_data_path.format(image_i), movement_data_path.format(image_i), settings, real_change, CALCULATE_ERROR)
+        final_r, final_t, inliers, _ = predict_pose_change(base_data_path.format(image_i), movement_data_path.format(image_i), settings, real_change, CALCULATE_ERROR=False)
 
         list_R.append(final_r)
         list_t.append(final_t)
@@ -100,27 +100,4 @@ def plot_cdf(X, title, movement_type, real_change, xyz=False, rpy=False):
     plt.ylim([0, 1])
 
     plt.savefig("../output/cdf_{}_{}_{}.png".format("t" if xyz else "r", movement_type, max(real_change.values())))
-    plt.close()
-
-
-def plot_matches(img1, kp1, img2, kp2, top_matches, inliers, base_data_path, image_i):
-    plt.figure(figsize=(10, 5))
-    img3 = cv2.drawMatches(img1, kp1, img2, kp2, np.array(top_matches)[inliers].tolist(), None, flags=2)
-    plt.imshow(img3)
-    plt.savefig("../output/feature_match/" + base_data_path.split("/")[3] + "." + str(image_i) + ".png")
-    plt.close()
-
-
-def plot_3d(q, q_prime, title, base_data_path, image_i, label_1, label_2):
-    fig = plt.figure(figsize=[6, 6])
-    ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(q[0, :], q[1, :], q[2, :], c='k', label=label_1)
-    ax.scatter(q_prime[0, :], q_prime[1, :], q_prime[2, :], c='r', marker='x', label=label_2)
-
-    for i in range(q.shape[1]):
-        plt.plot([q[0, i], q_prime[0, i]], [q[1, i], q_prime[1, i]], [q[2, i], q_prime[2, i]], 'k--')
-
-    ax.legend()
-
-    plt.savefig("../output/3d_points/" + base_data_path.split("/")[3] + "." + str(image_i) + title + ".png")
     plt.close()
