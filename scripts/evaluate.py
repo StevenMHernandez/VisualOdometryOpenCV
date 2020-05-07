@@ -9,6 +9,7 @@ cv = cv2
 
 
 def evaluate(base_data_path, movement_data_path, settings, real_change, CALCULATE_ERROR):
+    list_index = []
     list_R = []
     list_t = []
     list_inliers = []
@@ -24,11 +25,15 @@ def evaluate(base_data_path, movement_data_path, settings, real_change, CALCULAT
         #
         # Predict Pose Change
         #
-        final_r, final_t, inliers, _ = predict_pose_change(base_data_path.format(image_i), movement_data_path.format(image_i), settings, real_change, CALCULATE_ERROR=False)
+        try:
+            _, final_r, final_t, inliers, _ = predict_pose_change(base_data_path.format(image_i), movement_data_path.format(image_i), settings, real_change, CALCULATE_ERROR=False, print_image=True)
 
-        list_R.append(final_r)
-        list_t.append(final_t)
-        list_inliers.append(inliers)
+            list_index.append(image_i)
+            list_R.append(final_r)
+            list_t.append(final_t)
+            list_inliers.append(inliers)
+        except Exception as e:
+            print("some exception occured. skipping.")
 
     R_bar = np.array(list_R)
     t_bar = np.array(list_t)
@@ -38,31 +43,92 @@ def evaluate(base_data_path, movement_data_path, settings, real_change, CALCULAT
     RPY_mean = R_bar.mean(axis=0)
     RPY_std = R_bar.std(axis=0)
 
-    # #
-    # # Plot CDF
-    # #
+    #
+    # Plot CDF
+    #
     # if movement_type == 'translation':
-    #     plot_cdf(t_bar, "Translation", movement_type, real_change, xyz=True)
+    plt.figure(figsize=[7, 7])
+    plt.subplot(2,1,1)
+    plot_cdf((t_bar), "Translation", movement_type, real_change, xyz=True)
     # else:
-    #     plot_cdf(R_bar, "Rotation", movement_type, real_change, rpy=True)
+    plt.subplot(2,1,2)
+    plot_cdf((R_bar), "Rotation", movement_type, real_change, rpy=True)
+    plt.show()
 
-    # #
-    # # Plot all predictions per Rotation and Translation
-    # #
-    # plt.figure(figsize=(12, 8))
-    # plt.subplot(1, 2, 1)
-    # plot_means(R_bar, RPY_mean, RPY_std, "Rotation")
-    # plt.subplot(1, 2, 2)
-    # plot_means(t_bar, XYZ_mean, XYZ_std, "Translation")
-    # plt.suptitle("{}\n{}".format(base_data_path, movement_data_path))
-    # plt.show()
+    #
+    # Plot all predictions per Rotation and Translation
+    #
+    plt.figure(figsize=(12, 8))
+    plt.subplot(1, 2, 1)
+    plot_means(R_bar, RPY_mean, RPY_std, "Rotation")
+    plt.xlabel("image-pair index")
+    plt.ylabel("prediction")
+    plt.subplot(1, 2, 2)
+    plot_means(t_bar, XYZ_mean, XYZ_std, "Translation")
+    plt.ylabel("prediction")
+    plt.xlabel("image-pair index")
+    plt.suptitle("{}\n{}".format(base_data_path, movement_data_path))
+    plt.show()
 
-    # #
-    # # Plot number of inliers used.
-    # #
-    # X = sorted([sum(x) for x in list_inliers])
-    # plt.plot(X)
-    # plt.show()
+    plt.plot((t_bar))
+    for i in range(len(list_index)):
+        print()
+        plt.text(i, (t_bar)[i][0], "#" + str(list_index[i]))
+    plt.legend(["X", "Y", "Z"])
+    plt.ylabel("prediction")
+    plt.show()
+
+    plt.plot((R_bar))
+    for i in range(len(list_index)):
+        print()
+        plt.text(i, (R_bar)[i][0], "#" + str(list_index[i]))
+    plt.legend(["φ", "θ", "ψ", ])
+    plt.ylabel("prediction")
+    plt.show()
+
+    #
+    # Plot number of inliers used.
+    #
+    print()
+    print()
+    X = [sum(x) for x in list_inliers]
+    X_indices = np.argsort(X)
+    X = np.array(X)[X_indices]
+    M = np.array(list_index)[X_indices]
+    plt.plot(range(len(M)), X, 'ro')
+    plt.plot(range(len(M)), X, 'k.')
+    for i in range(len(M)):
+        print("list_index", M)
+        print(i)
+        plt.text(i, X[i] + 0.25, str(M[i]))
+    plt.xlabel("image-pair index")
+    plt.ylabel("Number of inliers")
+    plt.title("number of inliers (sorted)")
+    plt.show()
+    print("X_indices", X_indices)
+    print("list_index", M)
+
+    #
+    # Plot number of inliers used.
+    #
+    print()
+    print()
+    X = [sum(x) for x in list_inliers]
+    X_indices = np.argsort(X)
+    X = np.array(X)[X_indices]
+    M = np.array(list_index)[X_indices]
+    plt.plot(range(len(M)), X, 'ro')
+    plt.plot(range(len(M)), X, 'k.')
+    for i in range(len(M)):
+        print("list_index", M)
+        print(i)
+        plt.text(i, X[i] + 0.25, str(M[i]))
+    plt.xlabel("image-pair index")
+    plt.ylabel("Number of inliers")
+    plt.title("number of inliers (sorted)")
+    plt.show()
+    print("X_indices", X_indices)
+    print("list_index", M)
 
     return [
         XYZ_mean[0], XYZ_std[0],  # X
@@ -83,7 +149,7 @@ def plot_means(_list, _mean, _std, name):
 
 
 def plot_cdf(X, title, movement_type, real_change, xyz=False, rpy=False):
-    plt.figure(figsize=[7, 4])
+    # plt.figure(figsize=[7, 4])
     for i in range(3):
         _X = X[:, i]
         _step_size = 0.1
@@ -94,10 +160,12 @@ def plot_cdf(X, title, movement_type, real_change, xyz=False, rpy=False):
 
         plt.plot(_range, _cdf_sum / len(_X))
     plt.legend(["X", "Y", "Z"] if xyz else ["φ", "θ", "ψ", ])
-    plt.xlabel("Error ({})".format("mm" if xyz else "degrees"))
+    plt.xlabel("Prediction ({})".format("mm" if xyz else "degrees"))
     plt.ylabel("CDF")
-    plt.xlim([0, X.max()])
+    plt.xlim([X.min(), X.max()])
     plt.ylim([0, 1])
 
-    plt.savefig("../output/cdf_{}_{}_{}.png".format("t" if xyz else "r", movement_type, max(real_change.values())))
-    plt.close()
+    # plt.show()
+
+    # plt.savefig("../output/cdf_{}_{}_{}.png".format("t" if xyz else "r", movement_type, max(real_change.values())))
+    # plt.close()

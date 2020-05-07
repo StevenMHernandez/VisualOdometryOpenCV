@@ -14,15 +14,23 @@ if __name__ == "__main__":
 
     to_evaluate = {
         "path": "../data/RV_Data2/d1_{0:04d}.dat",
-        "files_start": 1,
-        "num_files": 584,
+        "files_start": 466,
+        "num_files": 468,
+        # "files_start": 1,
+        # "num_files": 450,
+        # "num_files": 584,
     }
 
     settings = {
-        # "KNN_MATCHING_RATIO": 0.1,
-        "KNN_MATCHING_RATIO": 0,
+        # "KNN_MATCHING_RATIO": 0.3,
+        # "KNN_MATCHING_RATIO": 0,
 
-        "RANSAC_THRESHOLD": 0.01,
+        "RANSAC_ITERATIONS": 25,  # number
+        "RANSAC_THRESHOLD": 0.01,  # error (m)
+        "RANSAC_MIN_OVERLAP_DISTANCE": 0.25,  # cm
+        "MAX_PAIR_MOVEMENT_DISTANCE": 25,  # cm
+        "MAX_ALLOWED_POSE_CHANGE_XYZ": 75,  # cm
+        "MIN_NUMBER_OF_INLIERS": 8,  # number
 
         # "MEDIAN_BLUR": True,
         "MEDIAN_BLUR": False,
@@ -50,7 +58,8 @@ if __name__ == "__main__":
         previous_global_xyz_sum = global_xyz_sum
         previous_global_quaternions_sum = global_quaternions_sum
 
-        for image_j in range(image_i + 1, to_evaluate["num_files"]):
+        for image_j in range(image_i + 1, min(image_i + 2, to_evaluate["num_files"])):
+        # for image_j in range(image_i + 1, to_evaluate["num_files"]):
             if image_i != image_j:
                 print()
                 print(image_i, image_j)
@@ -65,19 +74,30 @@ if __name__ == "__main__":
                     #
                     _settings = deepcopy(settings)
                     while True:
+                        print("=====================")
                         print("RANSAC_THRESHOLD", _settings["RANSAC_THRESHOLD"])
+                        print("MAX_PAIR_MOVEMENT_DISTANCE", _settings["MAX_PAIR_MOVEMENT_DISTANCE"])
+                        print("MAX_ALLOWED_POSE_CHANGE_XYZ", _settings["MAX_ALLOWED_POSE_CHANGE_XYZ"])
+                        print("MIN_NUMBER_OF_INLIERS", _settings["MIN_NUMBER_OF_INLIERS"])
+                        print("=====================")
                         try:
-                            final_r_q, final_t, inliers, informationMatrix = predict_pose_change(
+                            final_r_q, _, final_t, inliers, informationMatrix = predict_pose_change(
                                 base_data_path.format(image_i),
                                 base_data_path.format(image_j), _settings,
-                                real_change=None, CALCULATE_ERROR=False, print_image=False)
+                                real_change=None, CALCULATE_ERROR=False, print_image=True)
+
                             print("inlier:", len([x for x in inliers if x]))
                             break
-                        except:
-                            _settings["RANSAC_THRESHOLD"] *= 2
+                        except Exception as e:
+                            if ("Not enough inliers" in str(e)):
+                                _settings["MIN_NUMBER_OF_INLIERS"] = max(3, _settings["MIN_NUMBER_OF_INLIERS"] - 1)
+                            print(e)
+                            _settings["RANSAC_THRESHOLD"] *= 1.25
+                            _settings["MAX_PAIR_MOVEMENT_DISTANCE"] *= 1.125
+                            _settings["MAX_ALLOWED_POSE_CHANGE_XYZ"] *= 1.0125
                 else:
                     try:
-                        final_r_q, final_t, inliers, informationMatrix = predict_pose_change(
+                        final_r_q, _, final_t, inliers, informationMatrix = predict_pose_change(
                             base_data_path.format(image_i),
                             base_data_path.format(image_j), settings,
                             real_change=None, CALCULATE_ERROR=False, print_image=False)
@@ -86,7 +106,8 @@ if __name__ == "__main__":
                         continue
 
                 num_inliers = len([x for x in inliers if x])
-                num_inliers_matrix[image_i - to_evaluate["files_start"], image_j - to_evaluate["files_start"]] = num_inliers
+                num_inliers_matrix[
+                    image_i - to_evaluate["files_start"], image_j - to_evaluate["files_start"]] = num_inliers
 
                 #
                 # Compute: local-change and global-change: (sum of local changes).
@@ -95,9 +116,11 @@ if __name__ == "__main__":
                     if image_i == 1:
                         global_xyz_sum = previous_global_xyz_sum + np.array(final_t)
                     else:
-                        global_xyz_sum = previous_global_xyz_sum + (previous_global_quaternions_sum).rotate(np.array(final_t))
+                        global_xyz_sum = previous_global_xyz_sum + (previous_global_quaternions_sum).rotate(
+                            np.array(final_t))
                     global_quaternions_sum *= Quaternion(final_r_q[3], final_r_q[0], final_r_q[1], final_r_q[2])
-                    output_string = " ".join([str(x) for x in global_xyz_sum]) + " " + " ".join([str(x) for x in final_r_q])
+                    output_string = " ".join([str(x) for x in global_xyz_sum]) + " " + " ".join(
+                        [str(x) for x in final_r_q])
                     vertex_output += "VERTEX_SE3:QUAT " + str(image_i) + " " + output_string + " \n"
 
                 output_string = " ".join([str(x) for x in final_t]) + " " + " ".join([str(x) for x in final_r_q])

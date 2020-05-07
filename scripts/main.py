@@ -1,23 +1,38 @@
+from time import time
+
 from scripts.evaluate import evaluate
 
 if __name__ == "__main__":
     print("Start")
+    start = time()
 
     to_evaluate = {
-        "../data/RV_Data/Pitch/d1_-40/d1_{0:04d}.dat": [
-            ({"pitch": 3}, "../data/RV_Data/Pitch/d2_-37/d2_{0:04d}.dat"), # tuple: (value changed, directory for files)
-            ({"pitch": 6}, "../data/RV_Data/Pitch/d3_-34/d3_{0:04d}.dat"),
-            ({"pitch": 9}, "../data/RV_Data/Pitch/d4_-31/d4_{0:04d}.dat"),
-        ],
-        "../data/RV_Data/Yaw/d1_44/d1_{0:04d}.dat": [
-            ({"yaw": 3}, "../data/RV_Data/Yaw/d2_41/d2_{0:04d}.dat"),
-            ({"yaw": 6}, "../data/RV_Data/Yaw/d3_38/d3_{0:04d}.dat"),
-            ({"yaw": 9}, "../data/RV_Data/Yaw/d4_35/d4_{0:04d}.dat"),
-        ],
+        # "../data/Test_Data1/pose1/org_{0:04d}.dat": [
+        #     ({}, "../data/Test_Data1/pose2/xypy_{0:04d}.dat")
+        # ],
+
+        # "../data/Test_Data2/p1/frm_{0:04d}.dat": [
+        #     ({}, "../data/Test_Data2/p2/frm_{0:04d}.dat"),
+        #     ({}, "../data/Test_Data2/p3/frm_{0:04d}.dat"),
+        # ],
+
+        # "../data/RV_Data/Pitch/d1_-40/d1_{0:04d}.dat": [
+        #     ({"pitch": 3}, "../data/RV_Data/Pitch/d2_-37/d2_{0:04d}.dat"), # tuple: (value changed, directory for files)
+        #     ({"pitch": 6}, "../data/RV_Data/Pitch/d3_-34/d3_{0:04d}.dat"),
+        #     ({"pitch": 9}, "../data/RV_Data/Pitch/d4_-31/d4_{0:04d}.dat"),
+        # ],
+        # "../data/RV_Data/Yaw/d1_44/d1_{0:04d}.dat": [
+        #     ({"yaw": 3}, "../data/RV_Data/Yaw/d2_41/d2_{0:04d}.dat"),
+        #     ({"yaw": 6}, "../data/RV_Data/Yaw/d3_38/d3_{0:04d}.dat"),
+        #     ({"yaw": 9}, "../data/RV_Data/Yaw/d4_35/d4_{0:04d}.dat"),
+        # ],
         "../data/RV_Data/Translation/Y1/frm_{0:04d}.dat": [
-            ({"y": 305}, "../data/RV_Data/Translation/Y2/frm_{0:04d}.dat"),
-            ({"y": 610}, "../data/RV_Data/Translation/Y3/frm_{0:04d}.dat"),
-            ({"y": 915}, "../data/RV_Data/Translation/Y4/frm_{0:04d}.dat"),
+            ({}, "../data/RV_Data/Translation/Y2/frm_{0:04d}.dat"),
+            # ({}, "../data/RV_Data/Translation/Y3/frm_{0:04d}.dat"),
+            # ({}, "../data/RV_Data/Translation/Y4/frm_{0:04d}.dat"),
+            # ({"y": 305}, "../data/RV_Data/Translation/Y2/frm_{0:04d}.dat"),
+            # ({"y": 610}, "../data/RV_Data/Translation/Y3/frm_{0:04d}.dat"),
+            # ({"y": 915}, "../data/RV_Data/Translation/Y4/frm_{0:04d}.dat"),
         ]
     }
 
@@ -66,4 +81,7 @@ if __name__ == "__main__":
             f.write(left_side + ",".join(["{:.3f}".format(x) for x in results]) + "\n")
             f.flush()
 
+
+    end = time()
+    print("Took:", end - start, "seconds")
     print("done")
