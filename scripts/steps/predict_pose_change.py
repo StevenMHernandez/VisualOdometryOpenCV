@@ -7,13 +7,12 @@ from transforms3d.euler import mat2euler
 from transforms3d.quaternions import mat2quat
 import matplotlib.pyplot as plt
 
-from scripts.steps.estimate_R_and_t import estimate_R_and_t
 from scripts.steps.load_data import load_image
 from scripts.steps.ransac import ransac
 
 ATTRIBUTE = "Amplitude"
 
-detector = cv2.xfeatures2d.SIFT_create(nfeatures=1000)
+detector = cv2.xfeatures2d.SIFT_create(nfeatures=1000, sigma=0.5)
 
 @cached(cache={}, key=lambda image_name, img_x: hashkey(image_name))
 def cachedDetectAndCompute(image_name, img_x):
@@ -59,7 +58,8 @@ def predict_pose_change(data_1, data_2, settings, real_change, CALCULATE_ERROR, 
     #
     R, t, inliers, informationMatrix = ransac(p, p_prime, settings)
 
-    if len([x for x in inliers if x]) < settings['MIN_NUMBER_OF_INLIERS'] < len(top_matches):
+    num_inliers = len([x for x in inliers if x])
+    if num_inliers < settings['MIN_NUMBER_OF_INLIERS'] or len(top_matches) == num_inliers:
         print("top_matches", len(top_matches), len([x for x in inliers if x]))
         raise Exception("Not enough inliers !")
 
